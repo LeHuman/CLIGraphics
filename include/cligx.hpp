@@ -29,10 +29,12 @@ using Line = std::pair<vec3, vec3>;
 using HLine = std::pair<vec4, vec4>;
 using CharSet = std::vector<const char *>;
 
-static const CharSet CHARSET_braille = std::vector{"⠁", "⠄", "⠅", "⠕", "⢕", "⢝", "⢵", "⢽", "⢿", "⣿"};
-static const CharSet CHARSET_extASCII = std::vector{"░", "▒", "▓", "█"};
-static const CharSet CHARSET_ASCII = std::vector{".", ":", "-", "=", "+", "*", "#", "%", "@"};
-static const CharSet CHARSET_combo = std::vector{".", "⠁", "⠄", ":", "⠅", "=", "+", "*", "⠕", "#", "%", "@", "⢕", "⢝", "░", "⢵", "⢽", "▒", "⢿", "⣿", "▓", "█"};
+static const CharSet CHARSET_braille = std::vector{" ", "⠁", "⠄", "⠅", "⠕", "⢕", "⢝", "⢵", "⢽", "⢿", "⣿"};
+static const CharSet CHARSET_braille_d = std::vector{" ", "⠁", " ", "⠁", "⠄", "⠁", "⠄", "⠁", "⠁", "⠄", "⠄", "⠅", "⠄", "⠅", "⠅", "⠅", "⠕", "⠅", "⠕", "⠕", "⢕", "⠕", "⢕", "⢕", "⢝", "⢝", "⢝", "⢵", "⢝", "⢵", "⢵", "⢽", "⢵", "⢽", "⢽", "⢿", "⣿"};
+static const CharSet CHARSET_extASCII = std::vector{" ", "░", "▒", "▓", "█"};
+static const CharSet CHARSET_extASCII_d = std::vector{" ", "░", "░", "▒", "░", "▒", "▒", "▒", "▓", "▒", "▓", "▓", "█", "▓", "█", "█", "█"};
+static const CharSet CHARSET_ASCII = std::vector{" ", ".", ":", "-", "=", "+", "*", "#", "%", "@"};
+static const CharSet CHARSET_combo = std::vector{" ", ".", "⠁", "⠄", ":", "⠅", "=", "+", "*", "⠕", "#", "%", "@", "⢕", "⢝", "░", "⢵", "⢽", "▒", "⢿", "⣿", "▓", "█"};
 // .:-=+*#%@⠁⠄⠅⠕⢕⢝⢵⢽⢿⣿░▒▓█
 
 constexpr float pi = glm::pi<float>();
@@ -61,15 +63,15 @@ struct LineHash {
 template <std::size_t width, std::size_t height>
 class CLIGraphics {
 private:
-    using Buffer = const char *[height][width];
+    using Buffer = int[height][width];
 
-    const char *BLANK = " ";
+    // const char *BLANK = " ";
     const char **charSet;
     std::size_t charLen;
     vec4 screenSpace{width, height, 0.0f, 1.0f};
     float screenSpaceMax;
 
-    Buffer buffer, prebuffer;
+    Buffer buffer = {{0}}, prebuffer = {{0}};
 
     vec3 _eye{0.0f, 0.0f, 1.0f};
     vec3 _center{0.0f, 0.0f, -1.0f};
@@ -85,23 +87,24 @@ private:
     bool renderThreadRunning = true;
 
     void renderLoop(int updateTime_ms) {
-        const char **ptr = &buffer[0][0];
-        const char **endPtr = ptr + (height * width);
+        int *ptr = &buffer[0][0];
+        int *endPtr = ptr + (height * width);
 
-        bufferMux.lock();
-        for (; ptr != endPtr; ++ptr) {
-            *ptr = BLANK;
-        }
-        bufferMux.unlock();
+        // bufferMux.lock();
+        // for (; ptr != endPtr; ++ptr) {
+        //     *ptr = BLANK;
+        // }
+        // bufferMux.unlock();
 
         std::ios_base::sync_with_stdio(false);
 
         while (renderThreadRunning) {
             {
-                std::lock_guard<std::mutex> guard(bufferMux);
+                std::lock_guard<std::mutex> guardC(charSetMux);
+                std::lock_guard<std::mutex> guardB(bufferMux);
                 clearScreen();
                 for (ptr = &buffer[0][0]; ptr != endPtr; ++ptr) {
-                    std::cout << *ptr;
+                    std::cout << charSet[*ptr];
                     if ((ptr + 1 - &buffer[0][0]) % width == 0)
                         std::cout << '\n';
                 }
@@ -161,10 +164,10 @@ public:
 
     void clearBuffer() {
         std::lock_guard<std::mutex> guard(prebufferMux);
-        const char **ptr = &prebuffer[0][0];
-        const char **endPtr = ptr + (height * width);
+        int *ptr = &prebuffer[0][0];
+        int *endPtr = ptr + (height * width);
         for (; ptr != endPtr; ++ptr) {
-            *ptr = BLANK;
+            *ptr = 0;
         }
     }
 
@@ -184,10 +187,10 @@ public:
 
         int _x = std::clamp(x, 0, (int)width - 1);
         int _y = std::clamp(y, 0, (int)height - 1);
-        z = std::clamp(z, 0, (int)charLen - 1);
+        z = std::clamp(z, 1, (int)charLen - 1);
 
         if (x == _x && y == _y)
-            prebuffer[y][x] = charSet[z]; // FIXME: depth check needed
+            prebuffer[y][x] = std::max(prebuffer[y][x], z); // FIXME: depth check needed
     }
 
     void drawLine(HLine &line) {
