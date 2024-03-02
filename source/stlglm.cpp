@@ -7,7 +7,6 @@
 #include <openstl/core/stl.h>
 
 CLIGx::vec3 vertex(openstl::Vec3 v) {
-    // return CLIGx::vec3{v.x / 2.5f, v.y / 2.5f, v.z / 2.5f};
     return CLIGx::vec3{v.x, v.y, v.z};
 }
 
