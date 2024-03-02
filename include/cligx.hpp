@@ -71,8 +71,11 @@ private:
 
     Buffer buffer, prebuffer;
 
-    mat4 viewMatrix = glm::lookAt(eye, center, up);
-    bool updateViewMatrix = true;
+    vec3 _eye{0.0f, 0.0f, 1.0f};
+    vec3 _center{0.0f, 0.0f, -1.0f};
+    vec3 _up{0.0f, 1.0f, 0.0f};
+    mat4 viewMatrix = glm::lookAt(_eye, _center, _up);
+    bool updateViewMatrix = false;
 
     std::mutex bufferMux;
     std::mutex viewMatrixMux;
@@ -109,12 +112,11 @@ private:
     }
 
 public:
-    // TODO: make read-only
-    vec3 eye{0.0f, 0.0f, 1.0f};
-    vec3 center{0.0f, 0.0f, -1.0f};
-    vec3 up{0.0f, 1.0f, 0.0f};
+    const vec3 &eye = _eye;
+    const vec3 &center = _center;
+    const vec3 &up = _up;
 
-    CLIGraphics(int updateTime_ms = 5, const CharSet &set = CHARSET_extASCII) {
+    CLIGraphics(int updateTime_ms = 5, const CharSet &set = CHARSET_braille) {
         useCharset(set);
         renderThread = std::jthread(&CLIGraphics::renderLoop, this, updateTime_ms);
     };
@@ -125,19 +127,19 @@ public:
     }
 
     void setCameraPosition(vec3 pos) {
-        eye = pos;
+        _eye = pos;
         std::lock_guard<std::mutex> guard(viewMatrixMux);
         updateViewMatrix = true;
     }
 
     void setCenterPosition(vec3 pos) {
-        center = pos;
+        _center = pos;
         std::lock_guard<std::mutex> guard(viewMatrixMux);
         updateViewMatrix = true;
     }
 
     void setUpPosition(vec3 pos) {
-        up = pos;
+        _up = pos;
         std::lock_guard<std::mutex> guard(viewMatrixMux);
         updateViewMatrix = true;
     }
@@ -176,15 +178,16 @@ public:
     }
 
     void drawPoint(vec4 point) {
-        point.x = (point.x + 1.0f) * 0.5f * width;
-        point.y = (1.0f - point.y) * 0.5f * height;
-        point.z = (point.z + 1.0f) * 0.5f * charLen;
+        int x = (point.x + 1.0f) * 0.5f * (width);
+        int y = (1.0f - point.y) * 0.5f * (height);
+        int z = (point.z + 1.0f) * 0.5f * (charLen);
 
-        size_t x = std::clamp((size_t)std::roundf(point.x), (size_t)0, width - 1);
-        size_t y = std::clamp((size_t)std::roundf(point.y), (size_t)0, height - 1);
-        size_t z = std::clamp((size_t)std::roundf(point.z), (size_t)0, charLen - 1);
+        int _x = std::clamp(x, 0, (int)width - 1);
+        int _y = std::clamp(y, 0, (int)height - 1);
+        z = std::clamp(z, 0, (int)charLen - 1);
 
-        prebuffer[y][x] = std::min(prebuffer[y][x], charSet[z]); // FIXME: depth check needed
+        if (x == _x && y == _y)
+            prebuffer[y][x] = charSet[z]; // FIXME: depth check needed
     }
 
     void drawLine(HLine &line) {
@@ -202,7 +205,7 @@ public:
 
     void drawLines(std::vector<HLine> lines) {
         if (updateViewMatrix) {
-            viewMatrix = glm::lookAt(eye, center, up);
+            viewMatrix = glm::lookAt(_eye, _center, _up);
             std::lock_guard<std::mutex> guard(viewMatrixMux);
             updateViewMatrix = false;
         }
