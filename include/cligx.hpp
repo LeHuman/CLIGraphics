@@ -97,19 +97,22 @@ private:
         // bufferMux.unlock();
 
         std::ios_base::sync_with_stdio(false);
+        std::string buf;
 
         while (renderThreadRunning) {
             {
                 std::lock_guard<std::mutex> guardC(charSetMux);
                 std::lock_guard<std::mutex> guardB(bufferMux);
-                clearScreen();
+                buf.clear();
                 for (ptr = &buffer[0][0]; ptr != endPtr; ++ptr) {
-                    std::cout << charSet[*ptr];
+                    buf += charSet[*ptr];
                     if ((ptr + 1 - &buffer[0][0]) % width == 0)
-                        std::cout << '\n';
+                        buf += '\n';
                 }
             }
-            std::cout << '\n';
+            buf += '\n';
+            // clearScreen();
+            std::cout << buf;
             std::this_thread::sleep_for(std::chrono::milliseconds(updateTime_ms));
         }
     }
