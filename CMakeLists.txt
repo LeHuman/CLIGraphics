@@ -67,7 +67,7 @@ CPMAddPackage(
 
 CPMAddPackage(
     NAME openstl
-    GIT_TAG v0.0.3
+    GIT_TAG v1.1.1
     GIT_REPOSITORY https://github.com/Innoptech/OpenSTL.git
 )
 # source_group(TREE ${openstl_SOURCE_DIR} FILES ${openstl_sources})
