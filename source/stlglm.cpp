@@ -7,7 +7,7 @@
 #include <openstl/core/stl.h>
 
 CLIGx::vec3 vertex(openstl::Vec3 v) {
-    return CLIGx::vec3{v.x, v.y, v.z};
+    return CLIGx::vec3{v.x, v.y, v.z} / CLIGx::vec3{70, 70, 70};
 }
 
 std::vector<CLIGx::Line> stlglm::openSTLFile(std::string filename) {
