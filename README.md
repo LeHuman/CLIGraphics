@@ -5,6 +5,7 @@
 <!-- TECHNOLOGY: glm -->
 <!-- STATUS: Inactive -->
 
+<!-- DEMO -->
 ![DemoGif](<images/demo.gif>)
 
 # CLIGraphics
@@ -24,7 +25,9 @@ This project mainly serves as a way to play around with C++ as is by no means me
 
 ### Why
 
+<!-- WHY START -->
 This was meant as a warm up for an interview. Also, I thought it was a neat idea that I wanted to try to do, which has been done before.
+<!-- WHY END -->
 
 ## Usage
 
